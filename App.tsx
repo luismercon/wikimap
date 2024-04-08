@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { styles } from './styles';
 import {
   requestForegroundPermissionsAsync,
@@ -10,6 +10,8 @@ import {
 }
   from 'expo-location'
 import MapView, { Marker } from 'react-native-maps';
+
+const touristIcon = {uri: 'https://cdn-icons-png.flaticon.com/128/3124/3124230.png'};
 
 
 export default function App() {
@@ -25,8 +27,11 @@ export default function App() {
       setLocation(currentPosition);
       console.log("Localização atual", currentPosition)
     }
-
   }
+
+  const handleMarkerClick = () => {
+    Alert.alert('You Are here!');
+  };
 
   useEffect(() => {
     requestLocationPermissions();
@@ -59,7 +64,9 @@ export default function App() {
           <Marker coordinate={{
             latitude: location.coords.latitude,
             longitude: location.coords.longitude
-          }}></Marker>
+          }} 
+          onPress={handleMarkerClick}
+          image={touristIcon}></Marker>
         </MapView>}
 
     </View>
