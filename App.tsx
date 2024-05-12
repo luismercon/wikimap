@@ -134,6 +134,7 @@ export default function App() {
               }}
               title={poi.title}
               onPress={() => handleMarkerPress(poi)}
+              image={require('./assets/wikiguideIcon.png')}
             />
           ))}
         </MapView>
@@ -141,14 +142,14 @@ export default function App() {
 
       {selectedPoi && (
         <Modal animationType='slide' transparent={true} visible={true}>
-          <View style={{ margin: 20, padding: 20, backgroundColor: 'white' }}>
-            <Text>{selectedPoi.title}</Text>
+          <View style={styles.modal}>
+            <Text style={styles.poiTitle}>{selectedPoi.title}</Text>
             <Text>{selectedPoi.snippet}</Text>
-            <Pressable onPress={handleButtonClick}>
-              <Text>Make Request</Text>
+            <Pressable onPress={handleButtonClick} style={styles.listenButton}>
+              <Text style={styles.listenButtonText}>Listen</Text>
             </Pressable>
-            <Pressable onPress={() => setSelectedPoi(null)}>
-              <Text>Close</Text>
+            <Pressable style={styles.closeButton} onPress={() => setSelectedPoi(null)}>
+              <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
           </View>
         </Modal>
