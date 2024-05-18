@@ -1,5 +1,5 @@
 import { Key, useEffect, useState } from 'react';
-import { Alert, View, Text, Modal, Pressable } from 'react-native';
+import { Alert, View, Text, Modal, Pressable, StyleSheet } from 'react-native';
 import { styles } from './styles';
 import {
   requestForegroundPermissionsAsync,
@@ -12,11 +12,11 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
 import { cleanText } from './WikiUtils';
+import * as Speech from 'expo-speech';
+import mapConfig from './mapConfig';
 
 
 const touristIcon = { uri: 'https://cdn-icons-png.flaticon.com/128/3124/3124230.png' };
-const gsradius = 3000; // 3km for testing purposes
-
 
 export default function App() {
 
@@ -57,6 +57,7 @@ export default function App() {
       const cleanedAbstract = cleanText(extract);
 
       console.log('Request response:', cleanedAbstract);
+      Speech.speak(cleanedAbstract, { language: 'en' });
 
       setCleanedAbstract(cleanedAbstract);
       setSelectedPoi(null);
@@ -75,7 +76,6 @@ export default function App() {
       timeInterval: 1000,
       distanceInterval: 1
     }, (response) => {
-      // console.log("Nova localização!", response)
       setLocation(response);
     });
   }, [])
@@ -91,13 +91,12 @@ export default function App() {
             action: 'query',
             list: 'geosearch',
             gscoord: `${latitude}|${longitude}`,
-            gsradius: gsradius,
-            gslimit: 10,
+            gsradius: mapConfig.gsradius,
+            gslimit: mapConfig.gslimit,
             format: 'json',
           },
         });
 
-        // console.log('Nearby places:', response.data);
         setNearbyPlaces(response.data.query.geosearch);
       }
     }
@@ -135,6 +134,7 @@ export default function App() {
               }}
               title={poi.title}
               onPress={() => handleMarkerPress(poi)}
+              image={require('./assets/wikiguideIcon.png')}
             />
           ))}
         </MapView>
@@ -142,14 +142,14 @@ export default function App() {
 
       {selectedPoi && (
         <Modal animationType='slide' transparent={true} visible={true}>
-          <View style={{ margin: 20, padding: 20, backgroundColor: 'white' }}>
-            <Text>{selectedPoi.title}</Text>
+          <View style={styles.modal}>
+            <Text style={styles.poiTitle}>{selectedPoi.title}</Text>
             <Text>{selectedPoi.snippet}</Text>
-            <Pressable onPress={handleButtonClick}>
-              <Text>Make Request</Text>
+            <Pressable onPress={handleButtonClick} style={styles.listenButton}>
+              <Text style={styles.listenButtonText}>Listen</Text>
             </Pressable>
-            <Pressable onPress={() => setSelectedPoi(null)}>
-              <Text>Close</Text>
+            <Pressable style={styles.closeButton} onPress={() => setSelectedPoi(null)}>
+              <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
           </View>
         </Modal>
@@ -157,5 +157,3 @@ export default function App() {
     </View>
   );
 }
-
-
