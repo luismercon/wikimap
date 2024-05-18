@@ -1,4 +1,4 @@
-import { Key, useEffect, useState } from 'react';
+import { Key, SetStateAction, useEffect, useState } from 'react';
 import { Alert, View, Text, Modal, Pressable, StyleSheet } from 'react-native';
 import { styles } from './styles';
 import {
@@ -6,7 +6,8 @@ import {
   getCurrentPositionAsync,
   LocationObject,
   watchPositionAsync,
-  LocationAccuracy
+  LocationAccuracy,
+  watchHeadingAsync
 }
   from 'expo-location'
 import MapView, { Marker } from 'react-native-maps';
@@ -24,6 +25,8 @@ export default function App() {
   const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [cleanedAbstract, setCleanedAbstract] = useState('');
+  const [heading, setHeading] = useState(0);
+
 
 
   async function requestLocationPermissions() {
@@ -66,19 +69,43 @@ export default function App() {
     }
   }
 
+  // Debounce function to limit how often a function can fire
+  function debounce(func: { (headingData: { trueHeading: SetStateAction<number>; }): void; apply?: any; }, delay: number | undefined) {
+    let timeoutId: string | number | NodeJS.Timeout | undefined;
+    return (...args: any) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        func.apply(this as any, args);
+      }, delay);
+    };
+  }
+
   useEffect(() => {
     requestLocationPermissions();
   }, []);
 
   useEffect(() => {
-    watchPositionAsync({
-      accuracy: LocationAccuracy.Highest,
-      timeInterval: 1000,
-      distanceInterval: 1
-    }, (response) => {
-      setLocation(response);
-    });
-  }, [])
+    const watchLocation = async () => {
+      await watchPositionAsync({
+        accuracy: LocationAccuracy.Highest,
+        timeInterval: 1000,
+        distanceInterval: 1
+      }, (response) => {
+        setLocation(response);
+      });
+    };
+
+    const watchHeading = async () => {
+      await watchHeadingAsync(debounce((headingData: { trueHeading: SetStateAction<number>; }) => {
+        setHeading(headingData.trueHeading);
+      }, 300)); // Debounce with 300ms delay
+    };
+
+    watchLocation();
+    watchHeading();
+  }, []);
 
 
   useEffect(() => {
@@ -117,6 +144,16 @@ export default function App() {
             longitude: location.coords.longitude,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005
+          }}
+          camera={{
+            center: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            },
+            pitch: 0,
+            heading: heading,
+            altitude: 1000,
+            zoom: 18
           }}
         >
           <Marker coordinate={{
