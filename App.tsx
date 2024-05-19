@@ -1,5 +1,5 @@
-import { Key, SetStateAction, useEffect, useState } from 'react';
-import { Alert, View, Text, Modal, Pressable, StyleSheet } from 'react-native';
+import { Key, useEffect, useState } from 'react';
+import { Alert, View, Text, Modal, Pressable, Button } from 'react-native';
 import { styles } from './styles';
 import {
   requestForegroundPermissionsAsync,
@@ -7,35 +7,31 @@ import {
   LocationObject,
   watchPositionAsync,
   LocationAccuracy,
-  watchHeadingAsync
-}
-  from 'expo-location'
+} from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
 import { cleanText } from './WikiUtils';
 import * as Speech from 'expo-speech';
 import mapConfig from './mapConfig';
-
+import { Magnetometer } from 'expo-sensors';
 
 const touristIcon = { uri: 'https://cdn-icons-png.flaticon.com/128/3124/3124230.png' };
 
 export default function App() {
-
   const [location, setLocation] = useState<LocationObject | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
   const [selectedPoi, setSelectedPoi] = useState<any>(null);
   const [cleanedAbstract, setCleanedAbstract] = useState('');
   const [heading, setHeading] = useState(0);
-
-
+  const [rotateMap, setRotateMap] = useState(true); // New state to control map rotation
+  const [isDragging, setIsDragging] = useState(false); // State to track if the map is being dragged
+  const [userMovedMap, setUserMovedMap] = useState(false); // State to track if the user moved the map manually
 
   async function requestLocationPermissions() {
     const { granted } = await requestForegroundPermissionsAsync();
-
     if (granted) {
       const currentPosition = await getCurrentPositionAsync();
       setLocation(currentPosition);
-      // console.log("Localização atual", currentPosition)      
     }
   }
 
@@ -69,44 +65,59 @@ export default function App() {
     }
   }
 
-  // Debounce function to limit how often a function can fire
-  function debounce(func: { (headingData: { trueHeading: SetStateAction<number>; }): void; apply?: any; }, delay: number | undefined) {
-    let timeoutId: string | number | NodeJS.Timeout | undefined;
-    return (...args: any) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        func.apply(this as any, args);
-      }, delay);
-    };
+  // Function to calculate heading from Magnetometer data
+  function calculateHeading(magnetometerData: { x: any; y: any; z?: number; timestamp?: number; }) {
+    let { x, y } = magnetometerData;
+    let heading = Math.atan2(y, x) * (180 / Math.PI);
+    if (heading < 0) {
+      heading += 360;
+    }
+    return heading;
   }
 
   useEffect(() => {
     requestLocationPermissions();
-  }, []);
 
-  useEffect(() => {
     const watchLocation = async () => {
       await watchPositionAsync({
         accuracy: LocationAccuracy.Highest,
         timeInterval: 1000,
-        distanceInterval: 1
+        distanceInterval: 1,
       }, (response) => {
-        setLocation(response);
+        if (!userMovedMap) { // Only update location if user hasn't moved the map
+          setLocation(response);
+        }
       });
     };
 
-    const watchHeading = async () => {
-      await watchHeadingAsync(debounce((headingData: { trueHeading: SetStateAction<number>; }) => {
-        setHeading(headingData.trueHeading);
-      }, 300)); // Debounce with 300ms delay
-    };
-
     watchLocation();
-    watchHeading();
-  }, []);
+  }, [userMovedMap]);
 
+  useEffect(() => {
+    // Smooth heading data
+    let headingSum = 0;
+    let headingCount = 0;
+    let averageHeading = 0;
+
+    const subscription = Magnetometer.addListener((data) => {
+      const newHeading = calculateHeading(data);
+      headingSum += newHeading;
+      headingCount += 1;
+
+      if (headingCount === 10) { // Average every 10 readings
+        averageHeading = headingSum / headingCount;
+        setHeading(averageHeading);
+        headingSum = 0;
+        headingCount = 0;
+      }
+    });
+
+    Magnetometer.setUpdateInterval(100); // Update interval in ms
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchNearbyPlaces() {
@@ -131,11 +142,8 @@ export default function App() {
     fetchNearbyPlaces();
   }, [location]);
 
-
-
   return (
     <View style={styles.container}>
-
       {location && (
         <MapView
           style={styles.map}
@@ -143,22 +151,45 @@ export default function App() {
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
             latitudeDelta: 0.005,
-            longitudeDelta: 0.005
+            longitudeDelta: 0.005,
           }}
           camera={{
             center: {
               latitude: location.coords.latitude,
-              longitude: location.coords.longitude
+              longitude: location.coords.longitude,
             },
             pitch: 0,
-            heading: heading,
+            heading: rotateMap ? heading : 0, // Conditional heading update
             altitude: 1000,
-            zoom: 18
+            zoom: 18,
+          }}
+          onPanDrag={() => {
+            setIsDragging(true);
+            setUserMovedMap(true); // Set userMovedMap to true when user drags the map
+          }}
+          onRegionChangeComplete={() => {
+            setIsDragging(false);
+          }}
+          onUserLocationChange={(e) => {
+            if (!userMovedMap) {
+              const { latitude, longitude } = e.nativeEvent.coordinate || {};
+              setLocation({ coords: {
+                latitude: latitude || 0, longitude: longitude || 0,
+                altitude: null,
+                accuracy: null,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: null
+              }, timestamp: 0 });
+            }
+          }}
+          onTouchStart={() => {
+            setUserMovedMap(true);
           }}
         >
           <Marker coordinate={{
             latitude: location.coords.latitude,
-            longitude: location.coords.longitude
+            longitude: location.coords.longitude,
           }}
             onPress={handleSelfLocationClick}
             image={touristIcon} />
@@ -167,7 +198,7 @@ export default function App() {
               key={poi.pageid as Key}
               coordinate={{
                 latitude: poi.lat,
-                longitude: poi.lon
+                longitude: poi.lon,
               }}
               title={poi.title}
               onPress={() => handleMarkerPress(poi)}
@@ -176,6 +207,13 @@ export default function App() {
           ))}
         </MapView>
       )}
+
+      <Button title={rotateMap ? "Disable Rotation" : "Enable Rotation"} onPress={() => {
+        setRotateMap(!rotateMap);
+        if (!rotateMap) {
+          setUserMovedMap(false); // Reset userMovedMap when enabling rotation
+        }
+      }} />
 
       {selectedPoi && (
         <Modal animationType='slide' transparent={true} visible={true}>
