@@ -26,6 +26,7 @@ export default function App() {
   const [rotateMap, setRotateMap] = useState(true); // New state to control map rotation
   const [isDragging, setIsDragging] = useState(false); // State to track if the map is being dragged
   const [userMovedMap, setUserMovedMap] = useState(false); // State to track if the user moved the map manually
+  const [aboutModalVisible, setAboutModalVisible] = useState(false); // State to control the visibility of the About modal
 
   async function requestLocationPermissions() {
     const { granted } = await requestForegroundPermissionsAsync();
@@ -143,7 +144,7 @@ export default function App() {
   }, [location]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container}>      
       {location && (
         <MapView
           style={styles.map}
@@ -208,12 +209,15 @@ export default function App() {
         </MapView>
       )}
 
+      <View style={styles.buttonContainer}>
       <Button title={rotateMap ? "Disable Rotation" : "Enable Rotation"} onPress={() => {
         setRotateMap(!rotateMap);
         if (!rotateMap) {
           setUserMovedMap(false); // Reset userMovedMap when enabling rotation
         }
       }} />
+      <Button title="About" onPress={() => setAboutModalVisible(true)} />
+      </View>
 
       {selectedPoi && (
         <Modal animationType='slide' transparent={true} visible={true}>
@@ -229,6 +233,29 @@ export default function App() {
           </View>
         </Modal>
       )}
+
+<Modal
+        animationType="slide"
+        transparent={true}
+        visible={aboutModalVisible}
+        onRequestClose={() => setAboutModalVisible(false)}
+      >
+        <View style={styles.aboutModal}>
+          <View style={styles.aboutModalContent}>
+            <Text style={styles.aboutModalTitle}>About This App</Text>
+            <Text style={styles.aboutModalText}>
+            This project was developed within the scope of the Environmental Intelligence discipline, in the master's course at the Instituto Superior de Engenharia de Coimbra - ISEC. The main objective of this project is to develop a mobile application that allows the user to explore the surroundings and obtain information about points of interest (POIs) in the vicinity. The application uses the Wikipedia API to obtain information about the POIs and the Expo SDK to access the device's location and sensors. The application also uses the React Native Maps library to display the map and the POIs. No user data is stored.
+            </Text>
+            <Text>
+              Developed by: <Text style={{ fontWeight: 'bold' }}>Luis Merçon and Rafael Fonseca</Text>
+            </Text>
+            <Pressable style={styles.closeButton} onPress={() => setAboutModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
