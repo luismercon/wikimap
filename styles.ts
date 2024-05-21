@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { DevSettings, StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: {
@@ -15,6 +15,7 @@ export const styles = StyleSheet.create({
     margin: 20,
     padding: 20,
     backgroundColor: 'white',
+    maxHeight: '80%',
   },
   poiTitle: {
     fontSize: 18,
@@ -41,6 +42,42 @@ export const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: 'blue',
+  },
+  aboutModal: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  aboutModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+    maxHeight: '90%',
+  },
+  aboutModalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  aboutModalText: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    padding: 10,
+    backgroundColor: 'white',
+  },
+  descriptionContainer: {
+    padding: 10,
+  },
+  description: {
+    padding: 10,
+    marginBottom: 15,
   },
 
 });
