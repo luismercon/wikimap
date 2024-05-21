@@ -1,5 +1,5 @@
 import { Key, useEffect, useState } from 'react';
-import { Alert, View, Text, Modal, Pressable, Button } from 'react-native';
+import { Alert, View, Text, Modal, Pressable, Button, ScrollView } from 'react-native';
 import { styles } from './styles';
 import {
   requestForegroundPermissionsAsync,
@@ -40,11 +40,25 @@ export default function App() {
     Alert.alert('You Are here!');
   };
 
-  function handleMarkerPress(poi: any) {
+  async function handleMarkerPress(poi: any) {
     setSelectedPoi(poi);
+
+    try {
+      const url = `https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&pageids=${poi.pageid}`;
+      const response = await axios.get(url);
+
+      const pages = response.data.query.pages;
+      const pageId = Object.keys(pages)[0];
+      const extract = pages[pageId].extract;
+      const cleanedAbstract = cleanText(extract);
+
+      setCleanedAbstract(cleanedAbstract);
+    } catch (error) {
+      console.log('Request error:', error);
+    }
   }
 
-  async function handleButtonClick() {
+  /* async function handleButtonClick() {
     console.log('Make Request button clicked');
 
     try {
@@ -64,7 +78,7 @@ export default function App() {
     } catch (error) {
       console.log('Request error:', error);
     }
-  }
+  } */
 
   // Function to calculate heading from Magnetometer data
   function calculateHeading(magnetometerData: { x: any; y: any; z?: number; timestamp?: number; }) {
@@ -144,7 +158,7 @@ export default function App() {
   }, [location]);
 
   return (
-    <View style={styles.container}>      
+    <View style={styles.container}>
       {location && (
         <MapView
           style={styles.map}
@@ -174,14 +188,16 @@ export default function App() {
           onUserLocationChange={(e) => {
             if (!userMovedMap) {
               const { latitude, longitude } = e.nativeEvent.coordinate || {};
-              setLocation({ coords: {
-                latitude: latitude || 0, longitude: longitude || 0,
-                altitude: null,
-                accuracy: null,
-                altitudeAccuracy: null,
-                heading: null,
-                speed: null
-              }, timestamp: 0 });
+              setLocation({
+                coords: {
+                  latitude: latitude || 0, longitude: longitude || 0,
+                  altitude: null,
+                  accuracy: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null
+                }, timestamp: 0
+              });
             }
           }}
           onTouchStart={() => {
@@ -210,13 +226,13 @@ export default function App() {
       )}
 
       <View style={styles.buttonContainer}>
-      <Button title={rotateMap ? "Disable Rotation" : "Enable Rotation"} onPress={() => {
-        setRotateMap(!rotateMap);
-        if (!rotateMap) {
-          setUserMovedMap(false); // Reset userMovedMap when enabling rotation
-        }
-      }} />
-      <Button title="About" onPress={() => setAboutModalVisible(true)} />
+        <Button title={rotateMap ? "Disable Rotation" : "Enable Rotation"} onPress={() => {
+          setRotateMap(!rotateMap);
+          if (!rotateMap) {
+            setUserMovedMap(false); // Reset userMovedMap when enabling rotation
+          }
+        }} />
+        <Button title="About" onPress={() => setAboutModalVisible(true)} />
       </View>
 
       {selectedPoi && (
@@ -224,7 +240,10 @@ export default function App() {
           <View style={styles.modal}>
             <Text style={styles.poiTitle}>{selectedPoi.title}</Text>
             <Text>{selectedPoi.snippet}</Text>
-            <Pressable onPress={handleButtonClick} style={styles.listenButton}>
+            <ScrollView style={styles.descriptionContainer}>
+              <Text style={styles.description}>{cleanedAbstract}</Text>
+            </ScrollView>
+            <Pressable onPress={() => Speech.speak(cleanedAbstract, { language: 'en' })} style={styles.listenButton}>
               <Text style={styles.listenButtonText}>Listen</Text>
             </Pressable>
             <Pressable style={styles.closeButton} onPress={() => setSelectedPoi(null)}>
@@ -234,7 +253,7 @@ export default function App() {
         </Modal>
       )}
 
-<Modal
+      <Modal
         animationType="slide"
         transparent={true}
         visible={aboutModalVisible}
@@ -244,7 +263,7 @@ export default function App() {
           <View style={styles.aboutModalContent}>
             <Text style={styles.aboutModalTitle}>About This App</Text>
             <Text style={styles.aboutModalText}>
-            This project was developed within the scope of the Environmental Intelligence discipline, in the master's course at the Instituto Superior de Engenharia de Coimbra - ISEC. The main objective of this project is to develop a mobile application that allows the user to explore the surroundings and obtain information about points of interest (POIs) in the vicinity. The application uses the Wikipedia API to obtain information about the POIs and the Expo SDK to access the device's location and sensors. The application also uses the React Native Maps library to display the map and the POIs. No user data is stored.
+              This project was developed within the scope of the Environmental Intelligence discipline, in the master's course at the Instituto Superior de Engenharia de Coimbra - ISEC. The main objective of this project is to develop a mobile application that allows the user to explore the surroundings and obtain information about points of interest (POIs) in the vicinity. The application uses the Wikipedia API to obtain information about the POIs and the Expo SDK to access the device's location and sensors. The application also uses the React Native Maps library to display the map and the POIs. No user data is stored.
             </Text>
             <Text>
               Developed by: <Text style={{ fontWeight: 'bold' }}>Luis Merçon and Rafael Fonseca</Text>

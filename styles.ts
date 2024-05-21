@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { DevSettings, StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   container: {
@@ -15,6 +15,7 @@ export const styles = StyleSheet.create({
     margin: 20,
     padding: 20,
     backgroundColor: 'white',
+    maxHeight: '80%',
   },
   poiTitle: {
     fontSize: 18,
@@ -70,6 +71,13 @@ export const styles = StyleSheet.create({
     width: '100%',
     padding: 10,
     backgroundColor: 'white',
+  },
+  descriptionContainer: {
+    padding: 10,
+  },
+  description: {
+    padding: 10,
+    marginBottom: 15,
   },
 
 });
