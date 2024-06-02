@@ -58,28 +58,6 @@ export default function App() {
     }
   }
 
-  /* async function handleButtonClick() {
-    console.log('Make Request button clicked');
-
-    try {
-      const url = `https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&pageids=${selectedPoi.pageid}`;
-      const response = await axios.get(url);
-
-      const pages = response.data.query.pages;
-      const pageId = Object.keys(pages)[0];
-      const extract = pages[pageId].extract;
-      const cleanedAbstract = cleanText(extract);
-
-      console.log('Request response:', cleanedAbstract);
-      Speech.speak(cleanedAbstract, { language: 'en' });
-
-      setCleanedAbstract(cleanedAbstract);
-      setSelectedPoi(null);
-    } catch (error) {
-      console.log('Request error:', error);
-    }
-  } */
-
   // Function to calculate heading from Magnetometer data
   function calculateHeading(magnetometerData: { x: any; y: any; z?: number; timestamp?: number; }) {
     let { x, y } = magnetometerData;
