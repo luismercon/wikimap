@@ -153,8 +153,8 @@ export default function App() {
             },
             pitch: 0,
             heading: rotateMap ? heading : 0, // Conditional heading update
-            altitude: 1000,
-            zoom: 18,
+            altitude: 1,
+            zoom: 17,
           }}
           onPanDrag={() => {
             setIsDragging(true);
